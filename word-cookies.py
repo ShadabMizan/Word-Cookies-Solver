@@ -21,7 +21,7 @@ def main():
     cookiePan = cv2.imread('Assets/cookie-pan.png', 0)
 
     # Store all the letters that we know in their imread form in a templates array.
-    letters = ['A','B','C','F','G','M','N','O','P','S','T','U','Y'] # Letters that we have.
+    letters = ['A','B','C','D','E','F','G','H','I','M','N','O','P','R','S','T','U','V','W','Y'] # Letters that we have.
     templates = []
     for letter in letters:
         file_path = 'Assets/{}.png'.format(letter)
@@ -32,10 +32,11 @@ def main():
     lettersFound, letterLocs = findLetters(templates, letters, cookiePan, 0.8)
     print(lettersFound)
     print(letterLocs)
-
+    pyautogui.click(310, 64)
     for location in letterLocs:
         x = location[0]
         y = location[1]
+        
         pyautogui.mouseDown(x, y)
         time.sleep(1)
         pyautogui.mouseUp(x,y)
@@ -45,7 +46,7 @@ def findLetters(templates, letters, img, threshold):
     lettersFound = []
     lettersLocs = []
     lettersVals = []
-    # for check in range(2):
+
     for i in range(0,len(templates)): # i represents the index in the templates array, which is in alphabetical order
         # print("Next Letter... ", letters[i])
         template = templates[i]
@@ -74,15 +75,6 @@ def findLetters(templates, letters, img, threshold):
                     index = lettersFound.index(letters[i])
                     lettersVals[index] = max_val
                     lettersLocs[index] = max_loc
-                    
-            
-            # print("Max: {:.3f}".format(maximum))
-                
-            
-                                              
-        # print("Shuffling...")    
-        # pyautogui.click(360, 1420)
-        # time.sleep(1)
     
     # Threshold to check if a location of an identified letter is too close (i.e. the same spot) as another letter
     thr = 25
