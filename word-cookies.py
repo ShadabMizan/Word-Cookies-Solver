@@ -2,7 +2,7 @@ import pyautogui
 import time
 import cv2
 from PIL import ImageGrab
-from itertools import permutations
+import numpy as np
 
 # Borders of the entire playable screen are: (When docked to the left half of the window)
 # (310, 64), (1128, 1514)
@@ -37,39 +37,64 @@ def findLetters(templates, letters, img, threshold):
     lettersFound = []
     lettersLocs = []
     lettersVals = []
-
-    for i in range(0,len(templates)): # i represents the index in the templates array, which is in alphabetical order
+    thr = 25
+    for letter in range(0,len(templates)): # i represents the index in the templates array, which is in alphabetical order
         # print("Next Letter... ", letters[i])
-        template = templates[i]
+        template = templates[letter]
         height, width = template.shape
 
         # Need to rotate the template because the letters can spawn in any orientation. Then we need to test all these orientations to see if we get a really good match.
         # [-16,17] step size 8
         maximum = 0
+        locSize = 0
         for angle in range(-16,17,8):
             rotation_matrix = cv2.getRotationMatrix2D((width / 2, height / 2), angle, 1)
             rotated_template = cv2.warpAffine(template, rotation_matrix, (width, height))
             result = cv2.matchTemplate(img, rotated_template, cv2.TM_CCOEFF_NORMED) 
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+            # All locations of a match
+            loc = np.where(result >= threshold)    
+
+            # x and y coordinates of the matches
+            x_coords = loc[0]
+            y_coords = loc[1]
+
+            # Find duplicate matches around the same area
+            indices = []
+            for i in range(len(x_coords)):
+                for j in range(i + 1, len(y_coords)):
+                    if abs(x_coords[i] - x_coords[j]) <= thr and abs(y_coords[i] - y_coords[j]) <= thr:
+                        indices.append(j)
             
-            max_loc = (max_loc[0] + width/2, max_loc[1] + height/2)
+            indices.sort()
+            indices = list(set(indices)) # Remove duplicates
+
+            # Remove duplicate matches
+            while len(indices) > 0:
+                x_coords = np.delete(x_coords, indices[-1])
+                y_coords = np.delete(y_coords, indices[-1])
+                indices.pop()
+
+            if len(x_coords) > locSize:
+                locSize = len(x_coords)
 
             if max_val > maximum:
                 maximum = max_val
             
             if max_val >= threshold: # Match Found
-                if letters[i] not in lettersFound: # Letter is a new addition, meaning that its max_val data and location are also novel.
-                    lettersFound.append(letters[i])
+                if letters[letter] not in lettersFound: # Letter is a new addition, meaning that its max_val data and location are also novel.
+                    lettersFound.append(letters[letter])
                     lettersVals.append(max_val)
                     lettersLocs.append(max_loc)
-                elif letters[i] in lettersFound: # We already have this letter in our list
-                    index = lettersFound.index(letters[i])
+                elif letters[letter] in lettersFound: # We already have this letter in our list
+                    index = lettersFound.index(letters[letter])
                     if lettersVals[index] < max_val:
                         lettersVals[index] = max_val
-        print("Letter: {}, Max: {:.3f}".format(letters[i], maximum))
+        print("Letter: {}, Max: {:.3f}, Locations: {}".format(letters[letter], maximum, locSize))
     
     # Threshold to check if a location of an identified letter is too close (i.e. the same spot) as another letter
-    thr = 25
+   
     indices = []
     for i in range(len(lettersLocs)):
         for j in range(i + 1, len(lettersLocs)):
@@ -87,8 +112,6 @@ def findLetters(templates, letters, img, threshold):
         indices.pop()
 
     return lettersFound, lettersLocs
-
-
 
 if __name__ == "__main__":
     main()
