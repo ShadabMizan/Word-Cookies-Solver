@@ -15,8 +15,8 @@ y2 = 1519
 
 def main():
     # Grab a screenshot of the word-cookies screen.
-    cookiePanScreenshot = ImageGrab.grab(bbox=(x1, y1, x2, y2))
-    cookiePanScreenshot.save('Assets/cookie-pan.png')
+    # cookiePanScreenshot = ImageGrab.grab(bbox=(x1, y1, x2, y2))
+    # cookiePanScreenshot.save('Assets/cookie-pan.png')
 
     cookiePan = cv2.imread('Assets/cookie-pan.png', 0)
 
@@ -27,7 +27,7 @@ def main():
         file_path = 'Assets/Templates/{}.png'.format(letter)
         templates.append(cv2.imread(file_path, 0))
     
-
+    print("Finding Letters")
     lettersFound, letterLocs = findLetters(templates, letters, cookiePan, 0.8)
     print(lettersFound)
     print(letterLocs)
@@ -62,10 +62,11 @@ def findLetters(templates, letters, img, threshold):
                     lettersFound.append(letters[i])
                     lettersVals.append(max_val)
                     lettersLocs.append(max_loc)
-                elif letters[i] in lettersFound: # We already have this letter in our list, though due to a shuffle, it may be in a new location with a new max_val
+                elif letters[i] in lettersFound: # We already have this letter in our list
                     index = lettersFound.index(letters[i])
-                    lettersVals[index] = max_val
-                    lettersLocs[index] = max_loc
+                    if lettersVals[index] < max_val:
+                        lettersVals[index] = max_val
+        print("Letter: {}, Max: {:.3f}".format(letters[i], maximum))
     
     # Threshold to check if a location of an identified letter is too close (i.e. the same spot) as another letter
     thr = 25
