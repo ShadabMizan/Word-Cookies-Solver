@@ -2,7 +2,7 @@ import pyautogui
 import time
 import cv2
 from PIL import ImageGrab
-import numpy as np
+from itertools import permutations
 
 # Borders of the entire playable screen are: (When docked to the left half of the window)
 # (310, 64), (1128, 1514)
@@ -24,22 +24,13 @@ def main():
     letters = ['A','B','C','D','E','F','G','H','I','M','N','O','P','R','S','T','U','V','W','Y'] # Letters that we have.
     templates = []
     for letter in letters:
-        file_path = 'Assets/{}.png'.format(letter)
+        file_path = 'Assets/Templates/{}.png'.format(letter)
         templates.append(cv2.imread(file_path, 0))
     
-
 
     lettersFound, letterLocs = findLetters(templates, letters, cookiePan, 0.8)
     print(lettersFound)
     print(letterLocs)
-    pyautogui.click(310, 64)
-    for location in letterLocs:
-        x = location[0]
-        y = location[1]
-        
-        pyautogui.mouseDown(x, y)
-        time.sleep(1)
-        pyautogui.mouseUp(x,y)
 
 
 def findLetters(templates, letters, img, threshold):
@@ -93,10 +84,10 @@ def findLetters(templates, letters, img, threshold):
         lettersLocs.pop(indices[-1])
         lettersFound.pop(indices[-1])
         indices.pop()
-                
-
 
     return lettersFound, lettersLocs
+
+
 
 if __name__ == "__main__":
     main()
