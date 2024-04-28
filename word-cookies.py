@@ -87,7 +87,7 @@ def findLetters(templates, letters, img, threshold):
 
 
             letterMatches[letter] = [letterVals, letterLocs] 
-            # Add letters that have been matched to the letters found list 
+            # Add letters that have been matched to the letters found 
             if letter not in lettersFound and len(letterMatches[letter][0]) != 0:
                 lettersFound[letter] = letterMatches.get(letter) 
             elif letter in lettersFound:
