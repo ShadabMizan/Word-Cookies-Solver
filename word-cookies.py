@@ -15,8 +15,8 @@ y2 = 1519
 
 def main():
     # Grab a screenshot of the word-cookies screen.
-    # cookiePanScreenshot = ImageGrab.grab(bbox=(x1, y1, x2, y2))
-    # cookiePanScreenshot.save('Assets/cookie-pan.png')
+    cookiePanScreenshot = ImageGrab.grab(bbox=(x1, y1, x2, y2))
+    cookiePanScreenshot.save('Assets/cookie-pan.png')
 
     cookiePan = cv2.imread('Assets/cookie-pan.png', 0)
 
@@ -29,7 +29,9 @@ def main():
     
     print("Finding Letters")
     lettersFound = findLetters(templates, letters, cookiePan, 0.8)
-    print(lettersFound)
+    
+    for letter, data in lettersFound.items():
+        print("{}: Vals: {}, Coords: {}".format(letter, data[0], data[1]))
 
 
 def findLetters(templates, letters, img, threshold):
@@ -101,10 +103,46 @@ def findLetters(templates, letters, img, threshold):
     # Next is to compare the letters found to other letters found in roughly the same coords. 
     # This is to compare letters like P and F which are similar, and to see which has a higher value.
 
+    # 1. Find the indices of coordinates that are similar.
+    lettersToChange = []
+    thr = 25
+    for letter1 in list(lettersFound.keys()):
+        for letter2 in list(lettersFound.keys()):
+            if letter1 == letter2:
+                continue
+
+            vals1 = lettersFound[letter1][0]
+            coords1 = lettersFound[letter1][1]
+
+            vals2 = lettersFound[letter2][0]
+            coords2 = lettersFound[letter2][1]
+
+            for i in range(0, len(coords1)):
+                for j in range(0, len(coords2)):
+                    if abs(coords1[i][0] - coords2[j][0]) < thr and abs(coords1[i][1] - coords2[j][1]) < thr:
+                        if vals1[i] > vals2[j]:
+                            # Remove from letter2
+                            vals2New = vals2[:j] + vals2[j+1:]
+                            coords2New = coords2[:j] + coords2[j+1:]
+                            lettersToChange.append({letter2 : [vals2New, coords2New]})
+                        elif vals1[i] < vals2[j]:
+                            vals1New = vals1[:i] + vals1[i+1:]
+                            coords1New = coords1[:i] + coords1[i+1:]
+                            lettersToChange.append({letter1 : [vals1New, coords1New]})
+
+    uniqueLettersToChange = []
+    for entry in lettersToChange:
+        if entry not in uniqueLettersToChange:
+            uniqueLettersToChange.append(entry)
+
+    for entry in uniqueLettersToChange:
+        for key, value in entry.items():
+            if len(value[0]) == 0:
+                lettersFound.pop(key)
+            else:
+                lettersFound[key] = value
 
     return lettersFound
-        # print("Letter: {}, Max: {}, Loc: {}".format(letters[l], letterVals, letterLocs))
-
 
 
 if __name__ == "__main__":
