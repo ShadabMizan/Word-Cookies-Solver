@@ -2,7 +2,7 @@ import pyautogui
 import time
 import cv2
 from PIL import ImageGrab
-from itertools import permutations
+import numpy as np
 
 # Borders of the entire playable screen are: (When docked to the left half of the window)
 # (310, 64), (1128, 1514)
@@ -28,65 +28,82 @@ def main():
         templates.append(cv2.imread(file_path, 0))
     
     print("Finding Letters")
-    lettersFound, letterLocs = findLetters(templates, letters, cookiePan, 0.8)
+    lettersFound = findLetters(templates, letters, cookiePan, 0.8)
     print(lettersFound)
-    print(letterLocs)
 
 
 def findLetters(templates, letters, img, threshold):
-    lettersFound = []
-    lettersLocs = []
-    lettersVals = []
 
-    for i in range(0,len(templates)): # i represents the index in the templates array, which is in alphabetical order
+    # Map letters found to their location found
+    lettersFound = {} 
+
+    for l in range(0,len(templates)): # i represents the index in the templates array, which is in alphabetical order
         # print("Next Letter... ", letters[i])
-        template = templates[i]
+        template = templates[l]
         height, width = template.shape
 
         # Need to rotate the template because the letters can spawn in any orientation. Then we need to test all these orientations to see if we get a really good match.
         # [-16,17] step size 8
         maximum = 0
+
+        # Array to store all the unique locations of a letter that is found.
+        letterLocs = []
+        letterVals = []
+
         for angle in range(-16,17,8):
-            rotation_matrix = cv2.getRotationMatrix2D((width / 2, height / 2), angle, 1)
+            # Generate rotation matrix and apply it to the template
+            rotation_matrix = cv2.getRotationMatrix2D((width / 2, height / 2), angle, 1) 
             rotated_template = cv2.warpAffine(template, rotation_matrix, (width, height))
+
+            # Get the result matrix, holding values of a match at locations
             result = cv2.matchTemplate(img, rotated_template, cv2.TM_CCOEFF_NORMED) 
-            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-            
-            max_loc = (max_loc[0] + width/2, max_loc[1] + height/2)
 
-            if max_val > maximum:
-                maximum = max_val
-            
-            if max_val >= threshold: # Match Found
-                if letters[i] not in lettersFound: # Letter is a new addition, meaning that its max_val data and location are also novel.
-                    lettersFound.append(letters[i])
-                    lettersVals.append(max_val)
-                    lettersLocs.append(max_loc)
-                elif letters[i] in lettersFound: # We already have this letter in our list
-                    index = lettersFound.index(letters[i])
-                    if lettersVals[index] < max_val:
-                        lettersVals[index] = max_val
-        print("Letter: {}, Max: {:.3f}".format(letters[i], maximum))
-    
-    # Threshold to check if a location of an identified letter is too close (i.e. the same spot) as another letter
-    thr = 25
-    indices = []
-    for i in range(len(lettersLocs)):
-        for j in range(i + 1, len(lettersLocs)):
-            if abs(lettersLocs[i][0] - lettersLocs[j][0]) <= thr and abs(lettersLocs[i][1] - lettersLocs[j][1]) <= thr: # Two x and y coords are close together.
-                # Check which letter has a higher match
-                if lettersVals[i] > lettersVals[j]:
-                    indices.append(j)
-                else:
-                    indices.append(i)
-    indices.sort()
-    indices = list(set(indices)) # Remove duplicates
-    while len(indices) > 0:
-        lettersLocs.pop(indices[-1])
-        lettersFound.pop(indices[-1])
-        indices.pop()
+            locations = np.where(result >= threshold)
+            locations = list(zip(*locations[::-1]))
 
-    return lettersFound, lettersLocs
+            # Map letter matches to their associated values and locations
+            letterMatches = {} 
+
+            thr = 25
+            letter = letters[l]
+            for loc in locations:
+                max_val = result[loc[1], loc[0]] # Extract max_val, note (y,x) format of the result matrix
+                max_loc = (loc[0] + width/2, loc[1] + height/2) # max_loc is centered at the location found
+                
+                
+                letterLocs.append(max_loc)
+                letterVals.append(max_val)
+
+                # Go through every letter location to check for duplicates, or when matches are found close together such that they are essentially the same object
+                for i in range(0,len(letterLocs)-1):
+                    if abs(letterLocs[-1][0] - letterLocs[i][0]) < thr and abs(letterLocs[-1][1] - letterLocs[i][1]) < thr:
+                        # Duplicate found, remove the pair with a lower value
+                        if letterVals[i] >= letterVals[-1]:
+                            letterVals.pop()
+                            letterLocs.pop()
+                        elif letterVals[i] < letterVals[-1]:
+                            letterVals.pop(i) 
+                            letterLocs.pop(i)
+
+
+            letterMatches[letter] = [letterVals, letterLocs] 
+            # Add letters that have been matched to the letters found list 
+            if letter not in lettersFound and len(letterMatches[letter][0]) != 0:
+                lettersFound[letter] = letterMatches.get(letter) 
+            elif letter in lettersFound:
+                for i in range(0,len(lettersFound.get(letter)[0])):
+                    # Check if the letterMatches has a higher value than what we know in lettersFound
+                    if letterMatches.get(letter)[0][i] > lettersFound.get(letter)[0][i]:
+                        # Change the position and value to the better match
+                        lettersFound[letter][0][i] = letterMatches.get(letter)[0][i]
+                        lettersFound[letter][1][i] = letterMatches.get(letter)[1][i]
+                
+    # Next is to compare the letters found to other letters found in roughly the same coords. 
+    # This is to compare letters like P and F which are similar, and to see which has a higher value.
+
+
+    return lettersFound
+        # print("Letter: {}, Max: {}, Loc: {}".format(letters[l], letterVals, letterLocs))
 
 
 
