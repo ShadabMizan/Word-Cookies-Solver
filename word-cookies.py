@@ -24,11 +24,15 @@ def main():
     start_time = time.time()
     print("Finding Letters...")
     lettersFound = findLetters(templates, letters, cookiePan, 0.8)
-    print("Elapsed time: ", time.time() - start_time, " seconds")
-
-
     for letter, data in lettersFound.items():
         print("{}: Vals: {}, Coords: {}".format(letter, data[0], data[1]))
+    print("Elapsed time: ", time.time() - start_time, " seconds")
+
+    start_time = time.time()
+    print("Finding Words...")
+    wordsFound = findWords(lettersFound, Dictionary)
+    print(wordsFound)
+    print("Elapsed time: ", time.time() - start_time, " seconds")
 
 
 def loadImages(letters):
@@ -65,19 +69,18 @@ def findLetters(templates, letters, img, threshold):
     # Map letters found to their location found
     lettersFound = {} 
 
-    for l in range(0,len(templates)): # i represents the index in the templates array, which is in alphabetical order
+    for l in range(0,len(templates)): # l represents the index in the templates array, which is in alphabetical order
         # print("Next Letter... ", letters[i])
         template = templates[l]
         height, width = template.shape
-
-        # Need to rotate the template because the letters can spawn in any orientation. Then we need to test all these orientations to see if we get a really good match.
-        # [-16,17] step size 8
-        maximum = 0
 
         # Array to store all the unique locations of a letter that is found.
         letterLocs = []
         letterVals = []
 
+
+        # Need to rotate the template because the letters can spawn in any orientation. Then we need to test all these orientations to see if we get a really good match.
+        # [-16,17] step size 8
         for angle in range(-16,17,8):
             # Generate rotation matrix and apply it to the template
             rotation_matrix = cv2.getRotationMatrix2D((width / 2, height / 2), angle, 1) 
@@ -170,6 +173,34 @@ def findLetters(templates, letters, img, threshold):
 
     return lettersFound
 
+def findWords(lettersFound, Dictionary):
+    wordsFound = []
+    letters = list(lettersFound.keys())
+
+    letters = []
+    for l, data in lettersFound.items():
+        numl = len(data[1])
+        for n in range(0,numl):
+            letters.append(l)
+
+    
+    for letter in letters:
+        for wordLength in Dictionary[letter]:
+            for word in Dictionary[letter][wordLength]:
+                found = True
+                tempLetters = letters.copy()
+                for i in range(0,len(word)):
+                    if word[i].upper() not in tempLetters:
+                        found = False
+                        break
+                    tempLetters.remove(word[i].upper())
+                if found:
+                    wordsFound.append(word)
+    
+    return wordsFound
+        
+                
+    
 
 if __name__ == "__main__":
     main()
