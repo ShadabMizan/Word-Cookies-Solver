@@ -15,48 +15,64 @@ x2 = 1430
 y2 = 1519
 
 def main():
-    letters = ['A','B','C','D','E','F','G','H','I','M','N','O','P','R','S','T','U','V','W','Y'] # Letters that we have.
+    letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','R','S','T','U','V','W','Y'] # Letters that we have.
     start_time = time.time()
     print("Loading Assets...")
-    cookiePan, templates = loadImages(letters)
+    templates = loadTemplates(letters)
     Dictionary = loadTexts(letters)
     print("Elapsed time: ", time.time() - start_time, " seconds")
 
-    start_time = time.time()
-    print("Finding Letters...")
-    lettersDict = findLetters(templates, letters, cookiePan, 0.8)
-    for letter, data in lettersDict.items():
-        print("{}: Vals: {}, Coords: {}".format(letter, data[0], data[1]))
-    print("Elapsed time: ", time.time() - start_time, " seconds")
+    n = 0
+    while n < 5:
+        time.sleep(2)
+        start_time = time.time()
+        print("Grabbing Cookie Pan...")
+        cookiePan = loadCookiePan()
+        print("Elapsed time: ", time.time() - start_time, " seconds")
 
-    start_time = time.time()
-    print("Finding Words...")
-    wordsFound = findWords(lettersDict, Dictionary)
-    print(wordsFound)
-    print("Elapsed time: ", time.time() - start_time, " seconds")
+        start_time = time.time()
+        print("Finding Letters...")
+        lettersDict = findLetters(templates, letters, cookiePan, 0.8)
+        for letter, data in lettersDict.items():
+            print("{}: Vals: {}, Coords: {}".format(letter, data[0], data[1]))
+        print("Elapsed time: ", time.time() - start_time, " seconds")
 
-    drawWords(wordsFound, lettersDict)
+        start_time = time.time()
+        print("Finding Words...")
+        wordsFound = findWords(lettersDict, Dictionary)
+        print(wordsFound)
+        print("Elapsed time: ", time.time() - start_time, " seconds")
+
+        start_time = time.time()
+        print("Drawing Words...")
+        drawWords(wordsFound, lettersDict)
+        print("Elapsed time: ", time.time() - start_time, " seconds")
+        
+        time.sleep(8)
+        pyautogui.click(720,1000)
 
 
-def loadImages(letters):
+def loadCookiePan():
     # Grab a screenshot of the word-cookies screen.
     cookiePanScreenshot = ImageGrab.grab(bbox=(x1, y1, x2, y2))
     cookiePanScreenshot.save('Assets/cookie-pan.png')
 
     cookiePan = cv2.imread('Assets/cookie-pan.png', 0)
+    return cookiePan
 
+def loadTemplates(letters):
     # Store all the letters that we know in their imread form in a templates array.
     templates = []
     for letter in letters:
         file_path = 'Assets/Templates/{}.png'.format(letter)
         templates.append(cv2.imread(file_path, 0))
     
-    return cookiePan, templates
+    return templates
 
 def loadTexts(letters):
     Dictionary = {}
     for letter in letters:
-        Dictionary[letter] = {3: [], 4: []}  # Initialize sub-dictionary for each letter
+        Dictionary[letter] = {3: [], 4: [], 5: []}  # Initialize sub-dictionary for each letter
         with open('Assets/Texts/{}/three.txt'.format(letter), 'r') as threeTxt:
             words = threeTxt.readlines()
             words = [word.strip() for word in words]  # Remove all \n and spaces
@@ -64,7 +80,11 @@ def loadTexts(letters):
         with open('Assets/Texts/{}/four.txt'.format(letter), 'r') as fourTxt:
             words = fourTxt.readlines()
             words = [word.strip() for word in words]  
-            Dictionary[letter][4].extend(words)  
+            Dictionary[letter][4].extend(words) 
+        with open('Assets/Texts/{}/five.txt'.format(letter), 'r') as fiveTxt:
+            words = fiveTxt.readlines()
+            words = [word.strip() for word in words]  
+            Dictionary[letter][5].extend(words)  
     return Dictionary
 
 def findLetters(templates, letters, img, threshold):
@@ -185,9 +205,13 @@ def findWords(lettersFound, Dictionary):
         for n in range(0,numl):
             letters.append(l)
 
+    maxWordLength = len(letters)
     # Iterate through every letter we have, and go through all 3,4,5, etc. letter combinations we can make.
     for letter in letters:
         for wordLength in Dictionary[letter]:
+            if wordLength > maxWordLength: # Do not search 5 letter words if we only are given 4 letters        
+                break
+
             for word in Dictionary[letter][wordLength]: # Ex. go through every 3 letter word for 'E'
                 found = True
                 tempLetters = letters.copy()
@@ -198,7 +222,8 @@ def findWords(lettersFound, Dictionary):
                     tempLetters.remove(word[i].upper()) # Removing so that we can deal with if there are more than one occurance of a letter
                 if found:
                     wordsFound.append(word.upper()) 
-    
+
+    wordsFound = list(set(wordsFound))
     return wordsFound
 
 def drawWords(words, lettersDictionary):
@@ -213,16 +238,17 @@ def drawWords(words, lettersDictionary):
             lettersDictTemp[letter][1].pop() # Get rid of that coordinate as it has been used.
         allDragOrders.append(dragOrder)
     
-    pyautogui.click(500,500)
+    # Click cookie pan on the word cookies screen to focus on it
+    pyautogui.click(713,1100)
     time.sleep(0.25)
 
     for pointList in allDragOrders:
-        pyautogui.moveTo(pointList[0][0], pointList[0][1])
+        pyautogui.moveTo(pointList[0][0], pointList[0][1]) # Move to the first letter
         for x,y in pointList[1:]:
             pyautogui.mouseDown()
             pyautogui.moveTo(x, y, 0.1)
         pyautogui.mouseDown()
-        pyautogui.moveTo(713,1100, 0.1)
+        pyautogui.moveTo(713,1100, 0.1) # Move to the center of the pan before letting go
         pyautogui.mouseUp()
         time.sleep(0.1)
 
