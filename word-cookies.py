@@ -3,6 +3,7 @@ import time
 import cv2
 from PIL import ImageGrab
 import numpy as np
+import copy
 
 # Borders of the entire playable screen are: (When docked to the left half of the window)
 # (310, 64), (1128, 1514)
@@ -23,16 +24,18 @@ def main():
 
     start_time = time.time()
     print("Finding Letters...")
-    lettersFound = findLetters(templates, letters, cookiePan, 0.8)
-    for letter, data in lettersFound.items():
+    lettersDict = findLetters(templates, letters, cookiePan, 0.8)
+    for letter, data in lettersDict.items():
         print("{}: Vals: {}, Coords: {}".format(letter, data[0], data[1]))
     print("Elapsed time: ", time.time() - start_time, " seconds")
 
     start_time = time.time()
     print("Finding Words...")
-    wordsFound = findWords(lettersFound, Dictionary)
+    wordsFound = findWords(lettersDict, Dictionary)
     print(wordsFound)
     print("Elapsed time: ", time.time() - start_time, " seconds")
+
+    drawWords(wordsFound, lettersDict)
 
 
 def loadImages(letters):
@@ -175,32 +178,54 @@ def findLetters(templates, letters, img, threshold):
 
 def findWords(lettersFound, Dictionary):
     wordsFound = []
-    letters = list(lettersFound.keys())
-
     letters = []
+    # Fill letters with the letters that we have in the game. If a letter shows up twice, this will also account for that
     for l, data in lettersFound.items():
         numl = len(data[1])
         for n in range(0,numl):
             letters.append(l)
 
-    
+    # Iterate through every letter we have, and go through all 3,4,5, etc. letter combinations we can make.
     for letter in letters:
         for wordLength in Dictionary[letter]:
-            for word in Dictionary[letter][wordLength]:
+            for word in Dictionary[letter][wordLength]: # Ex. go through every 3 letter word for 'E'
                 found = True
                 tempLetters = letters.copy()
                 for i in range(0,len(word)):
-                    if word[i].upper() not in tempLetters:
+                    if word[i].upper() not in tempLetters: # Found a letter that is not in our word bank
                         found = False
                         break
-                    tempLetters.remove(word[i].upper())
+                    tempLetters.remove(word[i].upper()) # Removing so that we can deal with if there are more than one occurance of a letter
                 if found:
-                    wordsFound.append(word)
+                    wordsFound.append(word.upper()) 
     
     return wordsFound
-        
-                
+
+def drawWords(words, lettersDictionary):
+    allDragOrders = []
     
+    for word in words:
+        dragOrder = []
+        lettersDictTemp = copy.deepcopy(lettersDictionary) # Deep copy since this is a nested dictionary with arrays
+        for letter in word:
+            coords = lettersDictTemp[letter][1][-1] # Use the last coordinate of the list as a drag position
+            dragOrder.append(coords)
+            lettersDictTemp[letter][1].pop() # Get rid of that coordinate as it has been used.
+        allDragOrders.append(dragOrder)
+    
+    pyautogui.click(500,500)
+    time.sleep(0.25)
+
+    for pointList in allDragOrders:
+        pyautogui.moveTo(pointList[0][0], pointList[0][1])
+        for x,y in pointList[1:]:
+            pyautogui.mouseDown()
+            pyautogui.moveTo(x, y, 0.1)
+        pyautogui.mouseDown()
+        pyautogui.moveTo(713,1100, 0.1)
+        pyautogui.mouseUp()
+        time.sleep(0.1)
+
 
 if __name__ == "__main__":
     main()
