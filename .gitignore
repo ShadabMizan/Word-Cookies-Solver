@@ -1,2 +1,3 @@
 .venv
 Tutorials/
+__pycache__/
