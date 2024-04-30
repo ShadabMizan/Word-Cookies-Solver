@@ -3,6 +3,7 @@ import cv2
 
 import Load
 import Find
+import Words
 import Draw
 
 # Borders of the entire playable screen are: (When docked to the left half of the window)
@@ -38,7 +39,7 @@ def main():
 
     start_time = time.time()
     print("Finding Words...")
-    wordsFound = Find.findWords(lettersDict, Dictionary)
+    wordsFound = Words.findWords(lettersDict, Dictionary)
     print(wordsFound)
     print("Elapsed time: ", time.time() - start_time, " seconds")
 

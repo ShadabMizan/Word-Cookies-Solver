@@ -1,3 +1,5 @@
+# Load.py contains functions that should load data from files in the Assets folder into memeory for fast look-up.
+
 from PIL import ImageGrab
 import cv2
 

@@ -1,3 +1,5 @@
+# Find.py contains functions that deal with capturing an image from the word cookies screen and returning the coordinates of a targetted template
+
 import cv2
 import numpy as np
 
@@ -70,37 +72,42 @@ def findLetters(templates, letters, img, threshold):
     # This is to compare letters like P and F which are similar, and to see which has a higher value.
 
     # 1. Find the indices of coordinates that are similar.
-    lettersToChange = []
+    lettersToChange = [] # Contains a list of letters that will need to be changed
     thr = 25
     for letter1 in list(lettersFound.keys()):
         for letter2 in list(lettersFound.keys()):
             if letter1 == letter2:
                 continue
-
+            
+            # Store max values and coordinates to compare if different letters are being detected in the smae spot.
             vals1 = lettersFound[letter1][0]
             coords1 = lettersFound[letter1][1]
-
             vals2 = lettersFound[letter2][0]
             coords2 = lettersFound[letter2][1]
 
             for i in range(0, len(coords1)):
                 for j in range(0, len(coords2)):
                     if abs(coords1[i][0] - coords2[j][0]) < thr and abs(coords1[i][1] - coords2[j][1]) < thr:
+                        # Letter 1 has a better match than letter 2 at that spot
                         if vals1[i] > vals2[j]:
                             # Remove from letter2
                             vals2New = vals2[:j] + vals2[j+1:]
                             coords2New = coords2[:j] + coords2[j+1:]
                             lettersToChange.append({letter2 : [vals2New, coords2New]})
+                        # Letter 2 has a better match
                         elif vals1[i] < vals2[j]:
                             vals1New = vals1[:i] + vals1[i+1:]
                             coords1New = coords1[:i] + coords1[i+1:]
                             lettersToChange.append({letter1 : [vals1New, coords1New]})
 
+    # Make the lettersToChange list unique so there are no duplicates
     uniqueLettersToChange = []
     for entry in lettersToChange:
         if entry not in uniqueLettersToChange:
             uniqueLettersToChange.append(entry)
 
+    # A letter's values and coords can be empty if another letter has a better match for it at all its suspected locs
+    # If so, remove it from the final lettersFound list.
     for entry in uniqueLettersToChange:
         for key, value in entry.items():
             if len(value[0]) == 0:
@@ -109,33 +116,3 @@ def findLetters(templates, letters, img, threshold):
                 lettersFound[key] = value
 
     return lettersFound
-
-def findWords(lettersFound, Dictionary):
-    wordsFound = []
-    letters = []
-    # Fill letters with the letters that we have in the game. If a letter shows up twice, this will also account for that
-    for l, data in lettersFound.items():
-        numl = len(data[1])
-        for n in range(0,numl):
-            letters.append(l)
-
-    maxWordLength = len(letters)
-    # Iterate through every letter we have, and go through all 3,4,5, etc. letter combinations we can make.
-    for letter in letters:
-        for wordLength in Dictionary[letter]:
-            if wordLength > maxWordLength: # Do not search 5 letter words if we only are given 4 letters        
-                break
-
-            for word in Dictionary[letter][wordLength]: # Ex. go through every 3 letter word for 'E'
-                found = True
-                tempLetters = letters.copy()
-                for i in range(0,len(word)):
-                    if word[i].upper() not in tempLetters: # Found a letter that is not in our word bank
-                        found = False
-                        break
-                    tempLetters.remove(word[i].upper()) # Removing so that we can deal with if there are more than one occurance of a letter
-                if found:
-                    wordsFound.append(word.upper()) 
-
-    wordsFound = list(set(wordsFound))
-    return wordsFound
