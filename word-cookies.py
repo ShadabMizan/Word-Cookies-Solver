@@ -6,15 +6,6 @@ import Find
 import Words
 import Draw
 
-# Borders of the entire playable screen are: (When docked to the left half of the window)
-# (310, 64), (1128, 1514)
-
-# Pan area is (310, 810) to (1128, 1514)
-x1 = 0
-y1 = 0
-x2 = 1430
-y2 = 1519
-
 letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','R','S','T','U','V','W','Y'] # Letters that we have.
 
 def main():
@@ -22,7 +13,8 @@ def main():
     print("Loading Assets...")
     templates = Load.loadTemplates(letters)
     Dictionary = Load.loadTexts(letters)
-    nextButton = cv2.imread('Assets/Next.png', 0)
+    nextButton = cv2.imread('Assets/Templates/Next.png', 0)
+    emptySquare = cv2.imread('Assets/Templates/Empty-Square.png', 0)
     print("Elapsed time: ", time.time() - start_time, " seconds")
 
     start_time = time.time()

@@ -2,6 +2,13 @@
 
 import cv2
 import numpy as np
+from PIL import ImageGrab
+
+# Word cookies screen corners
+x1 = 0
+y1 = 0
+x2 = 1430
+y2 = 1519
 
 def findLetters(templates, letters, img, threshold):
 
@@ -116,3 +123,47 @@ def findLetters(templates, letters, img, threshold):
                 lettersFound[key] = value
 
     return lettersFound
+
+def findEmptySquares(emptySquare):
+    screen = ImageGrab.grab(bbox=(x1,y1,x2,y2))
+    screen.save('Assets/Empty-Squares-Check.png')
+
+    screenImg = cv2.imread('Assets/Empty-Squares-Check.png', 0)
+    height, width = emptySquare.shape
+
+    result = cv2.matchTemplate(screenImg, emptySquare, cv2.TM_CCOEFF_NORMED)
+    threshold = 0.8
+    locations = np.where(result >= threshold)
+    locations = list(zip(*locations[::-1]))
+
+    # Initialize lists to store coordinates and max_val
+    squareLocs = []
+    thr = 10
+    # Iterate over each location and extract max_val
+    for loc in locations:
+        max_loc = (loc[0] + width/2, loc[1] + height/2)
+        squareLocs.append(max_loc)
+
+        for i in range(0,len(squareLocs)-1):
+            if abs(squareLocs[-1][0] - squareLocs[i][0]) < thr and abs(squareLocs[-1][1] - squareLocs[i][1]) < thr:
+                # Duplicate found, remove the most recent one
+                squareLocs.pop()
+
+    print(squareLocs)
+                
+    # Determine if they are in a line, close together. 
+    thrX = 20
+    thrY = 10
+    lines = []
+    wordLength = 1
+    for i in range(1, len(squareLocs)):
+        yDist = abs(squareLocs[i][1] - squareLocs[i-1][1])
+        xDist = squareLocs[i][0] - squareLocs[i-1][0]
+        if yDist < thrY and abs(xDist - width) < thrX:
+            wordLength += 1
+        else:
+            lines.append(wordLength)
+            wordLength = 1
+    lines.append(wordLength)
+    
+    return lines

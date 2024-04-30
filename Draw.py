@@ -60,3 +60,7 @@ def nextRound(nextButtonTemplate):
         print(max_loc)
     
     return ended
+
+def shuffle():
+    # Click coordinates of shuffle button
+    pyautogui.click(365, 1430) 
