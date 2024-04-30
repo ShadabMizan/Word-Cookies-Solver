@@ -20,37 +20,39 @@ def main():
     print("Loading Assets...")
     templates = loadTemplates(letters)
     Dictionary = loadTexts(letters)
+    nextButton = cv2.imread('Assets/Next.png', 0)
     print("Elapsed time: ", time.time() - start_time, " seconds")
 
-    n = 0
-    while n < 5:
-        time.sleep(2)
-        start_time = time.time()
-        print("Grabbing Cookie Pan...")
-        cookiePan = loadCookiePan()
-        print("Elapsed time: ", time.time() - start_time, " seconds")
+    start_time = time.time()
+    print("Grabbing Cookie Pan...")
+    cookiePan = loadCookiePan()
+    print("Elapsed time: ", time.time() - start_time, " seconds")
 
-        start_time = time.time()
-        print("Finding Letters...")
-        lettersDict = findLetters(templates, letters, cookiePan, 0.8)
-        for letter, data in lettersDict.items():
-            print("{}: Vals: {}, Coords: {}".format(letter, data[0], data[1]))
-        print("Elapsed time: ", time.time() - start_time, " seconds")
+    start_time = time.time()
+    print("Finding Letters...")
+    lettersDict = findLetters(templates, letters, cookiePan, 0.8)
+    for letter, data in lettersDict.items():
+        print("{}: Vals: {}, Coords: {}".format(letter, data[0], data[1]))
+    print("Elapsed time: ", time.time() - start_time, " seconds")
 
-        start_time = time.time()
-        print("Finding Words...")
-        wordsFound = findWords(lettersDict, Dictionary)
-        print(wordsFound)
-        print("Elapsed time: ", time.time() - start_time, " seconds")
+    start_time = time.time()
+    print("Finding Words...")
+    wordsFound = findWords(lettersDict, Dictionary)
+    print(wordsFound)
+    print("Elapsed time: ", time.time() - start_time, " seconds")
 
-        start_time = time.time()
-        print("Drawing Words...")
-        drawWords(wordsFound, lettersDict)
-        print("Elapsed time: ", time.time() - start_time, " seconds")
-        
-        time.sleep(8)
-        pyautogui.click(720,1000)
+    start_time = time.time()
+    print("Drawing Known Words...")
+    drawWords(wordsFound, lettersDict)
+    print("Elapsed time: ", time.time() - start_time, " seconds")
 
+    start_time = time.time()
+    print("Waiting for End Screen...")
+    while nextRound(nextButton) == False:
+        time.sleep(0.1)
+    print("Elapsed time: ", time.time() - start_time, " seconds")
+
+    
 
 def loadCookiePan():
     # Grab a screenshot of the word-cookies screen.
@@ -252,6 +254,25 @@ def drawWords(words, lettersDictionary):
         pyautogui.mouseUp()
         time.sleep(0.1)
 
+
+def nextRound(nextButtonTemplate):
+    ended = False
+    height, width = nextButtonTemplate.shape
+    screen = ImageGrab.grab(bbox=(x1,y1,x2,y2))
+    screen.save('Assets/Next-Menu.png')
+
+    screenImg = cv2.imread('Assets/Next-Menu.png', 0)
+    result = cv2.matchTemplate(screenImg, nextButtonTemplate, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, max_loc = cv2.minMaxLoc(result)
+    max_loc = (max_loc[0] + width/2, max_loc[1] + height/2)
+
+    thr = 0.82
+    if max_val > thr:
+        ended = True
+        pyautogui.click(max_loc)
+        print(max_loc)
+    
+    return ended
 
 if __name__ == "__main__":
     main()
