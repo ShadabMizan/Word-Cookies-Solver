@@ -43,3 +43,17 @@ def loadTexts(letters):
             words = [word.strip() for word in words]  
             Dictionary[letter][5].extend(words)  
     return Dictionary
+
+def load_nGrams():
+    Bigrams = []
+    Trigrams = []
+    with open('Assets/Texts/bigrams.txt', 'r') as file:
+        bigrams = file.readlines()
+        bigrams = [bigram.strip() for bigram in bigrams]
+        Bigrams.extend(bigrams)
+    with open('Assets/Texts/trigrams.txt', 'r') as file:
+        trigrams = file.readlines()
+        trigrams = [trigram.strip() for trigram in trigrams]
+        Trigrams.extend(trigrams)
+    
+    return Bigrams, Trigrams

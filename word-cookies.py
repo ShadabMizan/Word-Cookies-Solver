@@ -13,6 +13,7 @@ def main():
     print("Loading Assets...")
     templates = Load.loadTemplates(letters)
     Dictionary = Load.loadTexts(letters)
+    bigrams, trigrams = Load.load_nGrams()
     nextButton = cv2.imread('Assets/Templates/Next.png', 0)
     emptySquare = cv2.imread('Assets/Templates/Empty-Square.png', 0)
     print("Elapsed time: ", time.time() - start_time, " seconds")
