@@ -130,9 +130,9 @@ def findEmptySquares(emptySquare):
 
     screenImg = cv2.imread('Assets/Empty-Squares-Check.png', 0)
     
-    lines = []
+    missingWordLengths = []
 
-    for scalar in range(72,100,4):
+    for scalar in range(60,100,2):
         scalar = scalar / 100
         emptySquareScaled = cv2.resize(emptySquare, None, fx=scalar, fy=scalar)
 
@@ -160,9 +160,41 @@ def findEmptySquares(emptySquare):
                     break
                     
         # Determine if they are in a line, close together. 
-        thrX = 15
-        thrY = 10
+        # Here are the acceptable thresholds for a line of squares to be considered part of the same missing word.
+        thrX = 0.15*width
+        thrY = 5
 
-    
-    return lines
+        # First, lets group points by their y-coords.
+        wordLocsByY = [[squareLocs[0]]]
 
+        for i in range(1,len(squareLocs)):
+            for j in range(0,len(wordLocsByY)):
+                found = False
+                if abs(squareLocs[i][1] - wordLocsByY[j][0][1]) < thrY:
+                    wordLocsByY[j].append(squareLocs[i])
+                    found = True
+                
+                if not found:
+                    wordLocsByY.append([squareLocs[i]])
+
+        # Then, We put them in ascending order of their x coordinates.
+        wordLocs = []
+        for line in wordLocsByY:
+            wordLocs.append(sorted(line, key=lambda x: x[0]))
+
+        wordLength = 1
+
+        for line in wordLocs:
+            for i in range(1,len(line)):
+                xDist = line[i][0] - line[i-1][0] 
+                if abs(xDist - width) < thrX:
+                    wordLength += 1
+                else:
+                    missingWordLengths.append(wordLength)
+                    wordLength = 1
+                
+            missingWordLengths.append(wordLength)
+
+        break
+             
+    return missingWordLengths

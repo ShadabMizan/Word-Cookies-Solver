@@ -82,7 +82,7 @@ def guessWords(lettersDict, wordsLeft, bigrams, trigrams):
                     letterComb.append(letters[i])
 
             # At this point, letterComb would have a list containing the trigram and the remaining letters
-            perms = permutations(letterComb, wordSize)
+            perms = list(permutations(letterComb))
             for phrase in perms:
                 phrase = ''.join(phrase)
                 if len(phrase) == wordSize:
