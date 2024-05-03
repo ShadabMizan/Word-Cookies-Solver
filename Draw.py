@@ -57,7 +57,6 @@ def nextRound(nextButtonTemplate):
     if max_val > thr:
         ended = True
         pyautogui.click(max_loc)
-        print(max_loc)
     
     return ended
 
