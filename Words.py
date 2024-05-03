@@ -14,7 +14,7 @@ def findWords(lettersFound, Dictionary):
     # Iterate through every letter we have, and go through all 3,4,5, etc. letter combinations we can make.
     for letter in letters:
         for wordLength in Dictionary[letter]:
-            if wordLength > maxWordLength: # Do not search 5 letter words if we only are given 4 letters        
+            if wordLength > maxWordLength: # I.e. do not search 5 letter words if we only are given 4 letters        
                 break
 
             for word in Dictionary[letter][wordLength]: # Ex. go through every 3 letter word for 'E'
@@ -33,9 +33,15 @@ def findWords(lettersFound, Dictionary):
 
 def guessWords(lettersDict, wordsLeft, bigrams, trigrams):
     letters = []
+    guesses = []
 
-    trigramPerms = []
-    bigramPerms = []
+    ngrams = []
+    for trigram in trigrams:
+        ngrams.append(trigram.upper())
+
+    for bigram in bigrams:
+        ngrams.append(bigram.upper())
+
     # Extract letters from the lettersDict
     for l, data in lettersDict.items():
         numl = len(data[1])
@@ -43,64 +49,39 @@ def guessWords(lettersDict, wordsLeft, bigrams, trigrams):
             letters.append(l)
 
     # Figure out if we can make any trigrams
-    trigramsFound = []
-    for trigram in trigrams:
+    for ngram in ngrams:
         found = True
         tempLetters = letters.copy()
-        for i in range(0, 3):
-            if trigram[i].upper() not in tempLetters:
+        for i in range(0, len(ngram)):
+            if ngram[i] not in tempLetters:
                 found = False
                 break
-            tempLetters.remove(trigram[i].upper())
+            tempLetters.remove(ngram[i])
         
         if found:
-            trigramsFound.append(trigram.upper())
-
-    # Check Bigrams
-    bigramsFound = []
-    for bigram in bigrams:
-        found = True
-        tempLetters = letters.copy()
-        for i in range(0, 2):
-            if bigram[i].upper() not in tempLetters:
-                found = False
-                break
-            tempLetters.remove(bigram[i].upper())
-        
-        if found:
-            bigramsFound.append(bigram.upper())
-    
-    # At this point, we have a list of popular trigrams and bigrams for the letters we have. 
-    # Next is to test all permutations of the remaining letters and the ngrams for the letter sizes we are missing.
-    # wordsLeft contains an array like [5, 3, 3] i.e missing a 5 letter word and 2 3 letter words. 
-    # Therefore look for all 5 letter permutations with the ngrams.
-    for wordSize in wordsLeft: 
-        for trigram in trigramsFound:
-            letterComb = [trigram]
-            for i in range(0, len(letters)):
-                if letters[i] not in trigram:
-                    letterComb.append(letters[i])
-
-            # At this point, letterComb would have a list containing the trigram and the remaining letters
-            perms = list(permutations(letterComb))
-            for phrase in perms:
-                phrase = ''.join(phrase)
-                if len(phrase) == wordSize:
-                    trigramPerms.append(phrase)
+            # Since we found a suitible trigram, now we need to generate word guesses based around it.
+            # Here is a parts array, containing the trigram and the remaining letters we guess places around.
+            parts = [ngram]
+            for l in letters:
+                if l not in ngram:
+                    parts.append(l)
             
-        for bigram in bigramsFound:
-            letterComb = [bigram]
-            for i in range(0, len(letters)):
-                if letters[i] not in bigram:
-                    letterComb.append(letters[i])
+            # Of course, we need to take into account the length of the word we are working with.
+            for wordLength in wordsLeft:
+                # len(trigram) is obviously 3, and n represents the number of entries we need to have a permutation of. So, the remaining letters plus 1, or the ngram itself
+                n = wordLength - len(ngram) + 1
+                perms = list(set(permutations(parts, n)))
+                for perm in perms:
+                    perm = ''.join(perm)
+                    guesses.append(perm)
+                    
+    return guesses
 
-            perms = permutations(letterComb, wordSize)
-            for phrase in perms:
-                phrase = ''.join(phrase)
-                if len(phrase) == wordSize:
-                    bigramPerms.append(phrase)
+
+
+
     
-    return trigramPerms, bigramPerms
+
 
         
     

@@ -39,9 +39,8 @@ def play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton):
     wordsLeft = Find.findEmptySquares(emptySquare)
     print(wordsLeft)
 
-    perms3, perms2 = Words.guessWords(lettersDict, wordsLeft, bigrams, trigrams)
-    print(perms3)
-    print(perms2)
+    guesses = Words.guessWords(lettersDict, wordsLeft, bigrams, trigrams)
+    print(guesses)
 
     # print("Waiting for End Screen...")
     # while Draw.nextRound(nextButton) == False:
