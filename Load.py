@@ -2,6 +2,7 @@
 
 from PIL import ImageGrab
 import cv2
+import os
 
 # Word cookies screen corners
 x1 = 0
@@ -12,9 +13,9 @@ y2 = 1519
 def loadCookiePan():
     # Grab a screenshot of the word-cookies screen.
     cookiePanScreenshot = ImageGrab.grab(bbox=(x1, y1, x2, y2))
-    cookiePanScreenshot.save('Assets/cookie-pan.png')
+    cookiePanScreenshot.save('Assets/Temp/cookie-pan.png')
 
-    cookiePan = cv2.imread('Assets/cookie-pan.png', 0)
+    cookiePan = cv2.imread('Assets/Temp/cookie-pan.png', 0)
     return cookiePan
 
 def loadTemplates(letters):
@@ -57,3 +58,17 @@ def load_nGrams():
         Trigrams.extend(trigrams)
     
     return Bigrams, Trigrams
+
+def deleteTempFiles():
+    folderPath = 'Assets/Temp'
+    # List all files in the folder
+    files = os.listdir(folderPath)
+    
+    # Iterate over each file and delete it
+    for fileName in files:
+        filePath = os.path.join(folderPath, fileName)
+        try:
+            os.remove(filePath)
+            print(f"Deleted: {filePath}")
+        except Exception as e:
+            print(f"Failed to delete: {filePath}. Error: {e}")

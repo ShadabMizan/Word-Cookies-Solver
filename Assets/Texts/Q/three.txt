@@ -1,3 +1,4 @@
-qat
-qis
-qua
+QAT
+QIN
+QIS
+QUA

@@ -75,7 +75,7 @@ def guessWords(lettersDict, wordsLeft, bigrams, trigrams):
                     perm = ''.join(perm)
                     guesses.append(perm)
                     
-    return guesses
+    return list(set(guesses))
 
 
 

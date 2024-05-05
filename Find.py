@@ -126,12 +126,17 @@ def findLetters(templates, letters, img, threshold):
 
 def findEmptySquares(emptySquare):
     screen = ImageGrab.grab(bbox=(x1,y1,x2,y2))
-    screen.save('Assets/Empty-Squares-Check.png')
+    screen.save('Assets/Temp/Empty-Squares-Check.png')
 
-    screenImg = cv2.imread('Assets/Empty-Squares-Check.png', 0)
+    screenImg = cv2.imread('Assets/Temp/Empty-Squares-Check.png', 0)
     
     missingWordLengths = []
+    height = 0
+    width = 0
 
+    # Find what at what scale the squares in the image are
+    bestMatch = 0
+    bestScale = 0
     for scalar in range(60,100,2):
         scalar = scalar / 100
         emptySquareScaled = cv2.resize(emptySquare, None, fx=scalar, fy=scalar)
@@ -145,56 +150,107 @@ def findEmptySquares(emptySquare):
         if len(locations) == 0:
             continue
 
-        # Initialize lists to store coordinates and max_val
-        squareLocs = []
-        thr = 5
-        # Iterate over each location and extract max_val
-        for loc in locations:
-            max_loc = (loc[0] + width/2, loc[1] + height/2)
-            squareLocs.append(max_loc)
+        if bestMatch < len(locations):
+            bestMatch = len(locations)
+            bestScale = scalar
+        
+    if bestScale == 0:
+        # Did not find any empty squares
+        return [], 0, 0
+    
+    emptySquareScaled = cv2.resize(emptySquare, None, fx=bestScale, fy=bestScale)
 
-            for i in range(0,len(squareLocs)-1):
-                if abs(squareLocs[-1][0] - squareLocs[i][0]) < thr and abs(squareLocs[-1][1] - squareLocs[i][1]) < thr:
-                    # Duplicate found, remove the most recent one
-                    squareLocs.pop()
-                    break
-                    
-        # Determine if they are in a line, close together. 
-        # Here are the acceptable thresholds for a line of squares to be considered part of the same missing word.
-        thrX = 0.15*width
-        thrY = 5
+    height, width = emptySquareScaled.shape
 
-        # First, lets group points by their y-coords.
-        wordLocsByY = [[squareLocs[0]]]
+    result = cv2.matchTemplate(screenImg, emptySquareScaled, cv2.TM_CCOEFF_NORMED)
+    threshold = 0.8
+    locations = np.where(result >= threshold)
+    locations = list(zip(*locations[::-1]))
+    # Initialize lists to store coordinates and max_val
+    squareLocs = []
+    thr = 5
+    # Iterate over each location and extract max_val
+    for loc in locations:
+        max_loc = (loc[0] + width/2, loc[1] + height/2)
+        squareLocs.append(max_loc)
 
-        for i in range(1,len(squareLocs)):
-            for j in range(0,len(wordLocsByY)):
-                found = False
-                if abs(squareLocs[i][1] - wordLocsByY[j][0][1]) < thrY:
-                    wordLocsByY[j].append(squareLocs[i])
-                    found = True
+        for i in range(0,len(squareLocs)-1):
+            if abs(squareLocs[-1][0] - squareLocs[i][0]) < thr and abs(squareLocs[-1][1] - squareLocs[i][1]) < thr:
+                # Duplicate found, remove the most recent one
+                squareLocs.pop()
+                break
                 
-                if not found:
-                    wordLocsByY.append([squareLocs[i]])
+    # Determine if they are in a line, close together. 
+    # Here are the acceptable thresholds for a line of squares to be considered part of the same missing word.
+    thrX = 0.15*width
+    thrY = 5
 
-        # Then, We put them in ascending order of their x coordinates.
-        wordLocs = []
-        for line in wordLocsByY:
-            wordLocs.append(sorted(line, key=lambda x: x[0]))
+    # First, lets group points by their y-coords.
+    wordLocsByY = [[squareLocs[0]]]
 
+    for i in range(1,len(squareLocs)):
+        found = False
+        for j in range(0,len(wordLocsByY)):
+            if abs(squareLocs[i][1] - wordLocsByY[j][0][1]) < thrY:
+                wordLocsByY[j].append(squareLocs[i])
+                found = True
+        
+        if not found:
+            wordLocsByY.append([squareLocs[i]])
+
+    # Then, We put them in ascending order of their x coordinates.
+    wordLocs = []
+    for line in wordLocsByY:
+        wordLocs.append(sorted(line, key=lambda x: x[0]))
+
+    wordLength = 1
+
+    for line in wordLocs:
+        for i in range(1,len(line)):
+            xDist = line[i][0] - line[i-1][0] 
+            if abs(xDist - width) < thrX:
+                wordLength += 1
+            else:
+                missingWordLengths.append(wordLength)
+                wordLength = 1
+            
+        missingWordLengths.append(wordLength)
         wordLength = 1
-
-        for line in wordLocs:
-            for i in range(1,len(line)):
-                xDist = line[i][0] - line[i-1][0] 
-                if abs(xDist - width) < thrX:
-                    wordLength += 1
-                else:
-                    missingWordLengths.append(wordLength)
-                    wordLength = 1
-                
-            missingWordLengths.append(wordLength)
-
-        break
              
-    return missingWordLengths
+    return missingWordLengths, width, height
+
+def checkFoundWord(squareWidth, squareHeight, n):
+    screen = ImageGrab.grab(bbox=(x1, y1, x2, y2))
+    if n % 2 == 0:
+        screen.save('Assets/Temp/screen1.png')
+    elif n % 2 == 1:
+        screen.save('Assets/Temp/screen2.png')
+
+    screen1 = cv2.imread('Assets/Temp/screen1.png', 0)
+
+    screen2 = cv2.imread('Assets/Temp/screen2.png', 0)
+    if screen2 is None:
+        screen2 = screen1.copy()
+    
+
+    # Compute absolute difference between the two images
+    diff = cv2.absdiff(screen1, screen2)
+
+    # Threshold the difference image
+    diff_threshold = 30
+    _, thresholded_diff = cv2.threshold(diff, diff_threshold, 255, cv2.THRESH_BINARY) # Set any pixels passing the diff_threshold to a max value of 255
+
+    # Find contours in the thresholded difference image
+    contours, _ = cv2.findContours(thresholded_diff, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Iterate through contours and centre coords
+    coords = []
+    for contour in contours:
+        x, y, _, _ = cv2.boundingRect(contour)
+        # Only look at changes made in the word bank area
+        if y > 185 and y < 775:
+            coords.append((x + squareWidth/2, y + squareHeight/2))
+
+    return coords
+    
+        

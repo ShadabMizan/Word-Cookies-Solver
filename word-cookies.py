@@ -36,11 +36,34 @@ def play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton):
     Draw.drawWords(wordsFound, lettersDict)
 
 
-    wordsLeft = Find.findEmptySquares(emptySquare)
+    wordsLeft, sqrWidth, sqrHeight = Find.findEmptySquares(emptySquare)
     print(wordsLeft)
 
     guesses = Words.guessWords(lettersDict, wordsLeft, bigrams, trigrams)
-    print(guesses)
+    
+    coords = []
+    while len(wordsLeft) > 0:
+        for i in range(0,len(guesses)):
+            # Draw the guess
+            guessLength = len(guesses[i])
+            Draw.drawAWord(guesses[i], lettersDict)
+            time.sleep(0.25)
+
+            # Detect a change
+            coords = Find.checkFoundWord(sqrWidth, sqrHeight, i)
+            print(coords)
+
+            if len(coords) > 0:
+                if len(coords) in wordsLeft:
+                    wordsLeft.remove(guessLength)
+                    break
+            
+            
+
+    Load.deleteTempFiles()
+        
+
+
 
     # print("Waiting for End Screen...")
     # while Draw.nextRound(nextButton) == False:
