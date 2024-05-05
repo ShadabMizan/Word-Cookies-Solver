@@ -15,8 +15,24 @@ def main():
     bigrams, trigrams = Load.load_nGrams()
     nextButton = cv2.imread('Assets/Templates/Next.png', 0)
     emptySquare = cv2.imread('Assets/Templates/Empty-Square.png', 0)
-    
+    shuffleRequired = False
+
     play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton)
+
+    print("Waiting for End Screen...")
+    startTime = time.time()
+    while Draw.nextRound(nextButton) == False:
+        if (startTime - time.time()) > 5.0:
+            print("Reattempting with shuffle...")
+            shuffleRequired = True
+            break
+        time.sleep(0.1)            
+    
+    if shuffleRequired:
+        play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton)
+
+    print("Deleting Temporary Files...")
+    Load.deleteTempFiles()
 
 
 def play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton):
@@ -33,41 +49,10 @@ def play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton):
     print(wordsFound)
 
     print("Drawing Known Words...")
-    Draw.drawWords(wordsFound, lettersDict)
-
-
-    wordsLeft, sqrWidth, sqrHeight = Find.findEmptySquares(emptySquare)
-    print(wordsLeft)
-
-    guesses = Words.guessWords(lettersDict, wordsLeft, bigrams, trigrams)
-    
-    coords = []
-    while len(wordsLeft) > 0:
-        for i in range(0,len(guesses)):
-            # Draw the guess
-            guessLength = len(guesses[i])
-            Draw.drawAWord(guesses[i], lettersDict)
-            time.sleep(0.25)
-
-            # Detect a change
-            coords = Find.checkFoundWord(sqrWidth, sqrHeight, i)
-            print(coords)
-
-            if len(coords) > 0:
-                if len(coords) in wordsLeft:
-                    wordsLeft.remove(guessLength)
-                    break
-            
-            
-
-    Load.deleteTempFiles()
-        
+    Draw.drawWords(wordsFound, lettersDict)  
 
 
 
-    # print("Waiting for End Screen...")
-    # while Draw.nextRound(nextButton) == False:
-    #     time.sleep(0.1)
 
 if __name__ == "__main__":
     main()

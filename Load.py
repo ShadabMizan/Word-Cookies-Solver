@@ -30,7 +30,7 @@ def loadTemplates(letters):
 def loadTexts(letters):
     Dictionary = {}
     for letter in letters:
-        Dictionary[letter] = {3: [], 4: [], 5: []}  # Initialize sub-dictionary for each letter
+        Dictionary[letter] = {3: [], 4: [], 5: [], 6: []}  # Initialize sub-dictionary for each letter
         with open('Assets/Texts/{}/three.txt'.format(letter), 'r') as threeTxt:
             words = threeTxt.readlines()
             words = [word.strip() for word in words]  # Remove all \n and spaces
@@ -43,6 +43,10 @@ def loadTexts(letters):
             words = fiveTxt.readlines()
             words = [word.strip() for word in words]  
             Dictionary[letter][5].extend(words)  
+        with open('Assets/Texts/{}/six.txt'.format(letter), 'r') as sixTxt:
+            words = sixTxt.readlines()
+            words = [word.strip() for word in words]  
+            Dictionary[letter][6].extend(words)  
     return Dictionary
 
 def load_nGrams():
