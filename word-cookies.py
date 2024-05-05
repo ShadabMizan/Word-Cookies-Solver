@@ -6,36 +6,45 @@ import Find
 import Words
 import Draw
 
-letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','R','S','T','U','V','W','Y'] # Letters that we have.
+letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','R','S','T','U','V','W','Y','Z'] # Letters that we have.
 
 def main():
     print("Loading Assets...")
     templates = Load.loadTemplates(letters)
     Dictionary = Load.loadTexts(letters)
-    bigrams, trigrams = Load.load_nGrams()
     nextButton = cv2.imread('Assets/Templates/Next.png', 0)
-    emptySquare = cv2.imread('Assets/Templates/Empty-Square.png', 0)
-    shuffleRequired = False
 
-    play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton)
-
-    print("Waiting for End Screen...")
-    startTime = time.time()
-    while Draw.nextRound(nextButton) == False:
-        if (startTime - time.time()) > 5.0:
-            print("Reattempting with shuffle...")
-            shuffleRequired = True
+    playing = True
+    n = 0
+    while playing:
+        startTime = time.time()
+        playAgain = False
+        play(templates, Dictionary)
+        print("Waiting for End Screen...")
+        startTimeEnd = time.time()
+        while Draw.nextRound(nextButton) == False:
+            if time.time() - startTimeEnd > 7.0:
+                playAgain = True
+                break
+            time.sleep(0.05)
+        
+        if playAgain == True:
+            Draw.shuffle()
+        else:
+            print("Time to Complete Level: {:.3f} seconds".format(time.time() - startTime))
+            n += 1
+        
+        if n > 20:
             break
-        time.sleep(0.1)            
+        
+        time.sleep(2)
     
-    if shuffleRequired:
-        play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton)
 
     print("Deleting Temporary Files...")
     Load.deleteTempFiles()
 
 
-def play(templates, Dictionary, emptySquare, bigrams, trigrams, nextButton):
+def play(templates, Dictionary):
     print("Grabbing Cookie Pan...")
     cookiePan = Load.loadCookiePan()
 

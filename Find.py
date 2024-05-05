@@ -47,6 +47,9 @@ def findLetters(templates, letters, img, threshold):
                 max_val = result[loc[1], loc[0]] # Extract max_val, note (y,x) format of the result matrix
                 max_loc = (loc[0] + width/2, loc[1] + height/2) # max_loc is centered at the location found
                 
+                # Skip this detection if it was detected outside of the cookie pan area, which are points below (greater than) y = 775
+                if max_loc[1] < 775: 
+                    continue
                 
                 letterLocs.append(max_loc)
                 letterVals.append(max_val)
